@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>مولد الفاتورة وسند القبض</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <header class="panel-header">
+        <p class="eyebrow">مطابق لملفات القالب الأصلية</p>
+        <h1>مولد المستندات</h1>
+        <p>القالب المعروض هو ملف SVG الأصلي نفسه، وتُستبدل القيم المتغيرة فقط.</p>
+      </header>
+
+      <div class="tabs" role="tablist" aria-label="نوع المستند">
+        <button class="tab active" type="button" data-tab="invoice" role="tab" aria-selected="true">فاتورة ضريبية</button>
+        <button class="tab" type="button" data-tab="receipt" role="tab" aria-selected="false">سند قبض</button>
+      </div>
+
+      <fieldset>
+        <legend>بيانات المنشأة</legend>
+        <label>اسم الشركة<input id="fCompanyName" value="شركة فودز للمواد الغذائية"></label>
+        <label>شعار الشركة (اختياري)<input id="fCompanyLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
+        <div class="logo-control">
+          <span id="companyLogoStatus" role="status" aria-live="polite">شعار فودز.png</span>
+          <button id="removeCompanyLogo" type="button">إزالة الشعار</button>
+        </div>
+        <p class="field-hint">يُضبط الشعار تلقائيًا داخل أبعاد القالب المرجعي مع الحفاظ على تناسبه.</p>
+      </fieldset>
+
+      <section id="invoiceForm" class="form-section active" aria-label="بيانات الفاتورة">
+        <div class="template-chip"><span>ملف القالب</span><b>invoice-template.svg</b></div>
+        <fieldset>
+          <legend>بيانات العميل والفاتورة</legend>
+          <label>العميل<input id="fCustomer" value=""></label>
+          <label>رقم التسجيل الضريبي للعميل<input id="fCustomerVat" value="311166413900003" inputmode="numeric"></label>
+          <div class="field-grid">
+            <label>رقم الفاتورة<input id="fInvoiceNo" value=""></label>
+            <label>التاريخ<input id="fInvoiceDate" type="date" value=""></label>
+          </div>
+          <label>تاريخ الاستحقاق<input id="fDueDate" type="date" value=""></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>الأصناف</legend>
+          <div id="itemsEditor"></div>
+          <button class="add-item" id="addItem" type="button">إضافة صنف</button>
+        </fieldset>
+      </section>
+
+      <section id="receiptForm" class="form-section" aria-label="بيانات سند القبض">
+        <div class="template-chip"><span>ملف القالب</span><b>receipt-template.svg</b></div>
+        <fieldset>
+          <legend>بيانات سند القبض</legend>
+          <div class="field-grid">
+            <label>تاريخ الاستلام<input id="rDate" type="date" value="" readonly aria-readonly="true"></label>
+            <label>المبلغ المستلم<input id="rAmount" type="number" min="0" step="0.01" value=""></label>
+          </div>
+          <label>الرقم التسلسلي<input id="rSerial" value=""></label>
+          <label>مُستلم من<input id="rFrom" value=""></label>
+          <label>تم الدفع من خلال<input id="rThrough" value=""></label>
+        </fieldset>
+      </section>
+
+      <div class="actions">
+        <button class="button primary download-button" id="downloadPdf" type="button">تنزيل PDF</button>
+        <button class="button secondary" id="resetBtn" type="button">تفريغ النموذج</button>
+        <button class="button secondary" id="printBtn" type="button">طباعة</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <div class="paper-wrap">
+        <section id="invoicePaper" class="paper invoice print-active" aria-label="معاينة الفاتورة الضريبية">
+          <img class="template" src="assets/invoice-template.svg" alt="">
+          <svg class="document-overlay" viewBox="0 0 595.92 841.92" aria-hidden="true">
+            <g id="patchInvoiceCompanyLeft" class="patch">
+              <rect x="27" y="28" width="170" height="20"/>
+              <text id="invoiceCompanyLeft" class="company-name" x="193.5" y="43.75" direction="rtl" lang="ar">شركة فودز للمواد الغذائية</text>
+            </g>
+            <g id="patchInvoiceCompanyRight" class="patch">
+              <rect x="402" y="28" width="178" height="20"/>
+              <text id="invoiceCompanyRight" class="company-name" x="577.5" y="43.75" direction="rtl" lang="ar">شركة فودز للمواد الغذائية</text>
+            </g>
+            <g id="invoiceCompanyLogo" class="company-logo">
+              <image id="invoiceCompanyLogoImage" x="256.96" y="27" width="82" height="53" preserveAspectRatio="xMidYMid meet"/>
+            </g>
+            <g id="patchHeaderVatLeft" class="patch">
+              <rect x="78" y="61.5" width="76" height="10.5"/>
+              <text id="headerVatLeft" class="pdf-latin value" x="80.11" y="69.51"></text>
+            </g>
+            <g id="patchHeaderVatRight" class="patch">
+              <rect x="422" y="61.5" width="75" height="10.5"/>
+              <text id="headerVatRight" class="pdf-latin value" x="492.57" y="69.51" text-anchor="end"></text>
+            </g>
+            <g id="patchCustomer" class="patch">
+              <rect x="95" y="134" width="438" height="13"/>
+              <text id="vCustomer" class="pdf-ar value" x="298" y="143.88" text-anchor="middle" direction="rtl" lang="ar">مؤسسة اسواق المخازن الرائدة</text>
+            </g>
+            <g id="patchCustomerVat" class="patch">
+              <rect x="95" y="149" width="388" height="13"/>
+              <text id="vCustomerVat" class="pdf-latin value" x="301" y="158.48" text-anchor="middle">300078161900003</text>
+            </g>
+            <g id="patchInvoiceNo" class="patch">
+              <rect x="115" y="163.5" width="100" height="13"/>
+              <text id="vInvoiceNo" class="pdf-latin value" x="166" y="173.08" text-anchor="middle">INV-11516</text>
+            </g>
+            <g id="patchInvoiceDate" class="patch">
+              <rect x="380" y="163.5" width="112" height="13"/>
+              <text id="vInvoiceDate" class="pdf-latin value" x="439" y="173.08" text-anchor="middle">2026-08-25</text>
+            </g>
+            <g id="patchDueDate" class="patch">
+              <rect x="115" y="175.4" width="100" height="13"/>
+              <text id="vDueDate" class="pdf-latin value" x="166" y="184.89" text-anchor="middle">2026-08-25</text>
+            </g>
+
+            <g id="patchItems" class="patch"></g>
+
+            <g id="patchSubtotal" class="patch total-patch">
+              <rect x="48" y="297" width="48" height="14"/>
+              <text id="subtotal" class="pdf-latin total-value" x="92" y="307.92" text-anchor="end">9,834.78</text>
+            </g>
+            <g id="patchVatTotal" class="patch total-patch">
+              <rect x="48" y="317" width="48" height="14"/>
+              <text id="vatTotal" class="pdf-latin total-value" x="92" y="328.08" text-anchor="end">1,475.22</text>
+            </g>
+            <g id="patchGrandTotal" class="patch total-patch">
+              <rect x="48" y="337" width="48" height="14"/>
+              <text id="grandTotal" class="pdf-latin total-value" x="92" y="347.54" text-anchor="end">11,310.00</text>
+            </g>
+            <g id="patchInvoiceQr" class="patch">
+              <rect x="500.5" y="284.3" width="77.5" height="77.5"/>
+              <image id="invoiceQr" x="501.15" y="284.98" width="76.46" height="76.46" preserveAspectRatio="none"/>
+            </g>
+            <g id="patchFooterInvoiceNo" class="patch">
+              <rect x="546" y="814" width="47" height="15"/>
+              <text id="footerInvoiceNo" class="pdf-latin footer-value" x="578" y="825" text-anchor="end">INV-11516</text>
+            </g>
+            <g id="patchInvoiceCompanyFooter" class="patch">
+              <rect x="182" y="815" width="112" height="16"/>
+              <text id="invoiceCompanyFooter" class="company-name company-footer" x="238" y="826.5" text-anchor="middle" direction="rtl" lang="ar">شركة فودز للمواد الغذائية</text>
+            </g>
+          </svg>
+        </section>
+
+        <section id="receiptPaper" class="paper receipt" aria-label="معاينة سند القبض">
+          <img class="template" src="assets/receipt-template.svg" alt="">
+          <svg class="document-overlay receipt-overlay" viewBox="0 0 595.92 420" aria-hidden="true">
+            <g id="patchReceiptCompanyLeft" class="patch receipt-patch">
+              <rect x="27" y="29" width="155" height="20"/>
+              <text id="receiptCompanyLeft" class="company-name receipt-company-name" x="177.5" y="44.5" direction="rtl" lang="ar">شركة فودز للمواد الغذائية</text>
+            </g>
+            <g id="patchReceiptCompanyRight" class="patch receipt-patch">
+              <rect x="410" y="29" width="160" height="20"/>
+              <text id="receiptCompanyRight" class="company-name receipt-company-name" x="568" y="44.5" direction="rtl" lang="ar">شركة فودز للمواد الغذائية</text>
+            </g>
+            <g id="receiptCompanyLogo" class="company-logo">
+              <image id="receiptCompanyLogoImage" x="256.96" y="27" width="82" height="53" preserveAspectRatio="xMidYMid meet"/>
+            </g>
+            <g id="patchReceiptDate" class="patch receipt-patch">
+              <rect x="112" y="120.5" width="97" height="14"/>
+              <text id="vrDate" class="receipt-latin receipt-value" x="164" y="131.25" text-anchor="middle">2026-08-26</text>
+            </g>
+            <g id="patchReceiptAmount" class="patch receipt-patch">
+              <rect x="433" y="120.5" width="64" height="14"/>
+              <text id="vrAmount" class="receipt-latin receipt-value" x="434.24" y="131.25">3130.00</text>
+            </g>
+            <g id="patchReceiptSerial" class="patch receipt-patch">
+              <rect x="104" y="135.5" width="111" height="14"/>
+              <text id="vrSerial" class="receipt-latin receipt-value" x="165" y="146.25" text-anchor="middle">SYS-CUS-PAY-3909</text>
+            </g>
+            <g id="patchReceiptFrom" class="patch receipt-patch">
+              <rect x="100" y="151.2" width="408" height="14"/>
+              <text id="vrFrom" class="receipt-ar receipt-value" x="298" y="162" text-anchor="middle" direction="rtl" lang="ar">مركز باب الجملة</text>
+            </g>
+            <g id="patchReceiptThrough" class="patch receipt-patch">
+              <rect x="100" y="166.2" width="387" height="14"/>
+              <text id="vrThrough" class="receipt-ar receipt-value" x="298" y="177" text-anchor="middle" direction="rtl" lang="ar">الخزينة 100</text>
+            </g>
+            <g id="patchFooterSerial" class="patch receipt-patch">
+              <rect x="512" y="392" width="78" height="15"/>
+              <text id="footerSerial" class="receipt-latin receipt-footer" x="514" y="402.75">SYS-CUS-PAY-3909</text>
+            </g>
+            <g id="patchReceiptCompanyFooter" class="patch receipt-patch">
+              <rect x="255" y="391" width="86" height="16"/>
+              <text id="receiptCompanyFooter" class="company-name receipt-company-name company-footer" x="298" y="403.5" text-anchor="middle" direction="rtl" lang="ar">شركة فودز للمواد الغذائية</text>
+            </g>
+          </svg>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
