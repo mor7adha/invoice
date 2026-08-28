@@ -30,7 +30,6 @@ const defaults = {
 let currentDoc = 'invoice';
 let items = structuredClone(defaults.invoice.items);
 let invoiceDateManuallyEdited = false;
-let printDocumentPending = null;
 let companyLogoSource = defaults.company.logo;
 let companyLogoLabel = defaults.company.logoLabel;
 let companyLogoMode = 'automatic';
@@ -74,6 +73,28 @@ function sequenceIdentifier(documentName) {
   return `${config.prefix}${sequenceValue(documentName)}`;
 }
 
+function identifierForValue(documentName, value) {
+  return `${DOCUMENT_SEQUENCES[documentName].prefix}${value}`;
+}
+
+function saveSequenceValue(documentName, value) {
+  try {
+    localStorage.setItem(DOCUMENT_SEQUENCES[documentName].storageKey, String(value));
+  } catch (error) {
+    console.warn('تعذر حفظ تسلسل المستندات في التخزين المحلي.', error);
+  }
+}
+
+function applySequenceValue(documentName, value) {
+  if (documentName === 'invoice') {
+    $('fInvoiceNo').value = identifierForValue(documentName, value);
+    updateInvoice();
+  } else {
+    $('rSerial').value = identifierForValue(documentName, value);
+    updateReceipt();
+  }
+}
+
 function applyCurrentSequence(documentName) {
   if (documentName === 'invoice') {
     $('fInvoiceNo').value = sequenceIdentifier(documentName);
@@ -84,15 +105,53 @@ function applyCurrentSequence(documentName) {
   }
 }
 
-function advanceSequence(documentName) {
-  const config = DOCUMENT_SEQUENCES[documentName];
-  const nextValue = sequenceValue(documentName) + 1;
+async function synchronizePersistentSequences() {
+  const localSequences = Object.fromEntries(
+    Object.keys(DOCUMENT_SEQUENCES).map(name => [name, sequenceValue(name)])
+  );
   try {
-    localStorage.setItem(config.storageKey, String(nextValue));
+    const response = await fetch('/.netlify/functions/sequences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sync', sequences: localSequences }),
+      cache: 'no-store'
+    });
+    if (!response.ok) throw new Error(`Sequence sync failed: ${response.status}`);
+    const sequences = await response.json();
+    Object.keys(DOCUMENT_SEQUENCES).forEach(name => {
+      const value = Number.parseInt(sequences[name], 10);
+      if (!Number.isSafeInteger(value)) return;
+      saveSequenceValue(name, value);
+      applySequenceValue(name, value);
+    });
   } catch (error) {
-    console.warn('تعذر حفظ تسلسل المستندات في التخزين المحلي.', error);
+    console.info('سيُستخدم الترقيم المحلي لأن التخزين الدائم غير متاح.', error);
   }
-  applyCurrentSequence(documentName);
+}
+
+async function reserveSequence(documentName) {
+  const localValue = sequenceValue(documentName);
+  try {
+    const response = await fetch('/.netlify/functions/sequences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reserve', documentName, minimum: localValue }),
+      cache: 'no-store'
+    });
+    if (!response.ok) throw new Error(`Sequence reservation failed: ${response.status}`);
+    const reservation = await response.json();
+    applySequenceValue(documentName, reservation.issued);
+    return { documentName, issued: reservation.issued, next: reservation.next, remote: true };
+  } catch (error) {
+    console.info('تعذر حجز رقم دائم؛ سيُستخدم الترقيم المحلي.', error);
+    applySequenceValue(documentName, localValue);
+    return { documentName, issued: localValue, next: localValue + 1, remote: false };
+  }
+}
+
+function finalizeReservation(reservation) {
+  saveSequenceValue(reservation.documentName, reservation.next);
+  applySequenceValue(reservation.documentName, reservation.next);
 }
 
 function number(value) {
@@ -650,7 +709,9 @@ async function downloadCurrentPdf() {
   const issuedDocument = currentDoc;
   button.disabled = true;
   button.textContent = 'جارٍ إنشاء PDF…';
+  let reservation = null;
   try {
+    reservation = await reserveSequence(issuedDocument);
     if (issuedDocument === 'invoice') refreshAutomaticInvoiceDate();
     else refreshAutomaticReceiptDate();
     const pdf = await buildPdfBlob(issuedDocument);
@@ -664,9 +725,10 @@ async function downloadCurrentPdf() {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    advanceSequence(issuedDocument);
+    finalizeReservation(reservation);
   } catch (error) {
     console.error(error);
+    if (reservation?.remote) finalizeReservation(reservation);
     alert('تعذر إنشاء ملف PDF. أعد تحميل الصفحة ثم حاول مرة أخرى.');
   } finally {
     button.disabled = false;
@@ -702,23 +764,28 @@ $('fInvoiceDate').addEventListener('input', () => {
 ['rDate', 'rAmount', 'rSerial', 'rFrom', 'rThrough'].forEach(id => $(id).addEventListener('input', updateReceipt));
 $('resetBtn').addEventListener('click', reset);
 $('downloadPdf').addEventListener('click', downloadCurrentPdf);
-$('printBtn').addEventListener('click', () => {
-  if (currentDoc === 'invoice') refreshAutomaticInvoiceDate();
-  else refreshAutomaticReceiptDate();
-  let rule = $('pageRule');
-  if (!rule) { rule = document.createElement('style'); rule.id = 'pageRule'; document.head.append(rule); }
-  rule.textContent = currentDoc === 'invoice'
-    ? '@page{size:210.227mm 297.011mm;margin:0}'
-    : '@page{size:210.227mm 148.167mm;margin:0}';
-  printDocumentPending = currentDoc;
-  window.print();
-});
-
-window.addEventListener('afterprint', () => {
-  if (!printDocumentPending) return;
-  const issuedDocument = printDocumentPending;
-  printDocumentPending = null;
-  advanceSequence(issuedDocument);
+$('printBtn').addEventListener('click', async () => {
+  const button = $('printBtn');
+  button.disabled = true;
+  let reservation = null;
+  try {
+    reservation = await reserveSequence(currentDoc);
+    if (currentDoc === 'invoice') refreshAutomaticInvoiceDate();
+    else refreshAutomaticReceiptDate();
+    let rule = $('pageRule');
+    if (!rule) { rule = document.createElement('style'); rule.id = 'pageRule'; document.head.append(rule); }
+    rule.textContent = currentDoc === 'invoice'
+      ? '@page{size:210.227mm 297.011mm;margin:0}'
+      : '@page{size:210.227mm 148.167mm;margin:0}';
+    window.print();
+    finalizeReservation(reservation);
+  } catch (error) {
+    console.error(error);
+    if (reservation?.remote) finalizeReservation(reservation);
+    alert('تعذرت طباعة المستند. أعد تحميل الصفحة ثم حاول مرة أخرى.');
+  } finally {
+    button.disabled = false;
+  }
 });
 
 window.addEventListener('storage', event => {
@@ -739,3 +806,4 @@ updateCompanyLogo();
 updateInvoice();
 updateReceipt();
 setDocument('invoice');
+synchronizePersistentSequences();
