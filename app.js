@@ -287,6 +287,43 @@ function base64(bytes) {
   return btoa(binary);
 }
 
+function qrDataUrl(payload) {
+  if (typeof QRCode === 'undefined') throw new Error('تعذر تحميل مولد رمز QR');
+  const holder = document.createElement('div');
+  const qrCode = new QRCode(holder, {
+    text: payload,
+    width: 128,
+    height: 128,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+  const model = qrCode._oQRCode;
+  const moduleCount = model.getModuleCount();
+  const quietZone = 4;
+  const moduleSize = 8;
+  const canvas = document.createElement('canvas');
+  canvas.width = (moduleCount + quietZone * 2) * moduleSize;
+  canvas.height = canvas.width;
+  const context = canvas.getContext('2d', { alpha: false });
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = '#000';
+  for (let row = 0; row < moduleCount; row += 1) {
+    for (let column = 0; column < moduleCount; column += 1) {
+      if (model.isDark(row, column)) {
+        context.fillRect(
+          (column + quietZone) * moduleSize,
+          (row + quietZone) * moduleSize,
+          moduleSize,
+          moduleSize
+        );
+      }
+    }
+  }
+  return canvas.toDataURL('image/png');
+}
+
 function setFittedSvgText(id, value, maxWidth, baseFontSize, minimumFontSize) {
   const element = $(id);
   element.textContent = value;
@@ -336,7 +373,7 @@ function updateInvoiceQr(total, vat, visible) {
   let offset = 0;
   parts.forEach(part => { combined.set(part, offset); offset += part.length; });
   const payload = base64(combined);
-  $('invoiceQr').setAttribute('href', `/qr?data=${encodeURIComponent(payload)}&t=${Date.now()}`);
+  $('invoiceQr').setAttribute('href', qrDataUrl(payload));
 }
 
 function updateInvoice() {
@@ -630,7 +667,7 @@ async function downloadCurrentPdf() {
     advanceSequence(issuedDocument);
   } catch (error) {
     console.error(error);
-    alert('تعذر إنشاء ملف PDF. تأكد من تشغيل المشروع من خلال server.py ثم حاول مرة أخرى.');
+    alert('تعذر إنشاء ملف PDF. أعد تحميل الصفحة ثم حاول مرة أخرى.');
   } finally {
     button.disabled = false;
     button.textContent = originalText;
