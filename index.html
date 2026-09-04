@@ -62,6 +62,7 @@
           <label>الرقم التسلسلي<input id="rSerial" value=""></label>
           <label>مُستلم من<input id="rFrom" value=""></label>
           <label>تم الدفع من خلال<input id="rThrough" value=""></label>
+          <label>الرقم الضريبي في السند<input id="rVat" value="311441804500003" inputmode="numeric"></label>
         </fieldset>
       </section>
 
@@ -159,6 +160,14 @@
             </g>
             <g id="receiptCompanyLogo" class="company-logo">
               <image id="receiptCompanyLogoImage" x="256.96" y="27" width="82" height="53" preserveAspectRatio="xMidYMid meet"/>
+            </g>
+            <g id="patchReceiptVatLeft" class="patch receipt-patch">
+              <rect x="78" y="61.5" width="76" height="10.5"/>
+              <text id="receiptVatLeft" class="receipt-latin receipt-header-vat" x="80.11" y="69.51">311441804500003</text>
+            </g>
+            <g id="patchReceiptVatRight" class="patch receipt-patch">
+              <rect x="422" y="61.5" width="75" height="10.5"/>
+              <text id="receiptVatRight" class="receipt-latin receipt-header-vat" x="492.57" y="69.51" text-anchor="end">311441804500003</text>
             </g>
             <g id="patchReceiptDate" class="patch receipt-patch">
               <rect x="112" y="120.5" width="97" height="14"/>

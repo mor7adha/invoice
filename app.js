@@ -19,7 +19,7 @@ const defaults = {
     customer: '', customerVat: '311166413900003', number: '', date: '', dueDate: '', items: []
   },
   receipt: {
-    date: '', amount: '', serial: '', from: '', through: 'الخزنة 100'
+    date: '', amount: '', serial: '', from: '', through: 'الخزنة 100', vat: '311441804500003'
   },
   company: {
     name: 'شركة فودز للمواد الغذائية', vat: '311441804500003',
@@ -306,7 +306,18 @@ function renderInvoiceRows(changed) {
     const common = { 'font-family': 'PDF Arial, Arial, sans-serif', 'font-size': 8.34091, fill: '#000', 'text-anchor': 'middle' };
 
     group.append(svgElement('text', { ...common, x: 571, y: baseline }, index + 1));
-    group.append(svgElement('text', { ...common, x: 520, y: baseline, 'font-family': 'Arabic Full, Arial, sans-serif', direction: 'rtl', 'unicode-bidi': 'embed', lang: 'ar' }, item.description));
+    const description = svgElement('text', {
+      ...common,
+      x: 552,
+      y: baseline,
+      'font-family': 'Arabic Full, Arial, sans-serif',
+      'text-anchor': 'start',
+      direction: 'rtl',
+      'unicode-bidi': 'embed',
+      lang: 'ar'
+    }, item.description);
+    group.append(description);
+    fitSvgTextElement(description, 162, 8.34091, 6);
     group.append(svgElement('text', { ...common, x: 360, y: baseline }, number(item.quantity)));
     group.append(svgElement('text', { ...common, x: 305, y: baseline }, money(item.price)));
     group.append(svgElement('text', { ...common, x: 237, y: baseline }, money(taxable)));
@@ -383,9 +394,7 @@ function qrDataUrl(payload) {
   return canvas.toDataURL('image/png');
 }
 
-function setFittedSvgText(id, value, maxWidth, baseFontSize, minimumFontSize) {
-  const element = $(id);
-  element.textContent = value;
+function fitSvgTextElement(element, maxWidth, baseFontSize, minimumFontSize) {
   element.style.fontSize = `${baseFontSize}px`;
   element.removeAttribute('textLength');
   element.removeAttribute('lengthAdjust');
@@ -398,6 +407,12 @@ function setFittedSvgText(id, value, maxWidth, baseFontSize, minimumFontSize) {
       element.setAttribute('lengthAdjust', 'spacingAndGlyphs');
     }
   }
+}
+
+function setFittedSvgText(id, value, maxWidth, baseFontSize, minimumFontSize) {
+  const element = $(id);
+  element.textContent = value;
+  fitSvgTextElement(element, maxWidth, baseFontSize, minimumFontSize);
 }
 
 function updateCompanyName() {
@@ -488,7 +503,7 @@ function updateReceipt() {
   updateCompanyName();
   const values = {
     date: $('rDate').value, amount: number($('rAmount').value), serial: $('rSerial').value,
-    from: $('rFrom').value, through: $('rThrough').value
+    from: $('rFrom').value, through: $('rThrough').value, vat: $('rVat').value.trim()
   };
 
   $('vrDate').textContent = values.date;
@@ -497,9 +512,12 @@ function updateReceipt() {
   $('vrFrom').textContent = values.from;
   $('vrThrough').textContent = values.through;
   $('footerSerial').textContent = values.serial;
+  setFittedSvgText('receiptVatLeft', values.vat, 72, 7.3, 5);
+  setFittedSvgText('receiptVatRight', values.vat, 72, 7.3, 5);
 
   ['patchReceiptDate', 'patchReceiptAmount', 'patchReceiptSerial',
-    'patchFooterSerial', 'patchReceiptFrom', 'patchReceiptThrough']
+    'patchFooterSerial', 'patchReceiptFrom', 'patchReceiptThrough',
+    'patchReceiptVatLeft', 'patchReceiptVatRight']
     .forEach(id => setPatch(id, true));
 }
 
@@ -534,6 +552,7 @@ function reset() {
   $('rSerial').value = sequenceIdentifier('receipt');
   $('rFrom').value = defaults.receipt.from;
   $('rThrough').value = defaults.receipt.through;
+  $('rVat').value = defaults.receipt.vat;
   $('fCompanyLogo').value = '';
   companyLogoMode = 'automatic';
   syncAutomaticCompanyLogo();
@@ -598,7 +617,7 @@ async function documentSvg(documentName) {
     .company-name{font-family:"Arabic Full",Arial,sans-serif;font-size:14px;font-weight:700;fill:#000;direction:rtl;unicode-bidi:embed}.company-footer{font-size:6.5px;font-weight:400}
     .value{font-size:8.34091px;font-weight:400;fill:#000}.total-value{font-size:8.34091px;font-weight:700;fill:#000}.footer-value{font-size:7.5px;font-weight:400;fill:#000}
     .receipt-patch rect{fill:#fff}.receipt-latin{font-family:"PDF Wafeq","PDF Arial",Arial,sans-serif}.receipt-ar{font-family:"Arabic Full",Arial,sans-serif;direction:rtl;unicode-bidi:embed}.receipt-company-name{fill:#354058}
-    .receipt-value{font-size:9px;font-weight:400;fill:#354058}.receipt-footer{font-size:7.5px;font-weight:400;fill:#000}
+    .receipt-header-vat{font-size:7.3px;font-weight:400;fill:#354058}.receipt-value{font-size:9px;font-weight:400;fill:#354058}.receipt-footer{font-size:7.5px;font-weight:400;fill:#000}
   `;
   return {
     width,
@@ -761,7 +780,7 @@ $('fInvoiceDate').addEventListener('input', () => {
   invoiceDateManuallyEdited = true;
   updateInvoice();
 });
-['rDate', 'rAmount', 'rSerial', 'rFrom', 'rThrough'].forEach(id => $(id).addEventListener('input', updateReceipt));
+['rDate', 'rAmount', 'rSerial', 'rFrom', 'rThrough', 'rVat'].forEach(id => $(id).addEventListener('input', updateReceipt));
 $('resetBtn').addEventListener('click', reset);
 $('downloadPdf').addEventListener('click', downloadCurrentPdf);
 $('printBtn').addEventListener('click', async () => {
@@ -802,6 +821,7 @@ $('rDate').value = localDateValue();
 $('fInvoiceNo').value = sequenceIdentifier('invoice');
 $('rSerial').value = sequenceIdentifier('receipt');
 $('rThrough').value = defaults.receipt.through;
+$('rVat').value = defaults.receipt.vat;
 updateCompanyLogo();
 updateInvoice();
 updateReceipt();
