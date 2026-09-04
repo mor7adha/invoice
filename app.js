@@ -513,7 +513,7 @@ function updateReceipt() {
   $('vrThrough').textContent = values.through;
   $('footerSerial').textContent = values.serial;
   setFittedSvgText('receiptVatLeft', values.vat, 72, 8.34091, 5);
-  setFittedSvgText('receiptVatRight', values.vat, 72, 8.34091, 5);
+  setFittedSvgText('receiptVatRight', values.vat, 66, 8.34091, 5);
 
   ['patchReceiptDate', 'patchReceiptAmount', 'patchReceiptSerial',
     'patchFooterSerial', 'patchReceiptFrom', 'patchReceiptThrough',
