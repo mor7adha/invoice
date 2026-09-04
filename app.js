@@ -512,8 +512,8 @@ function updateReceipt() {
   $('vrFrom').textContent = values.from;
   $('vrThrough').textContent = values.through;
   $('footerSerial').textContent = values.serial;
-  setFittedSvgText('receiptVatLeft', values.vat, 72, 7.3, 5);
-  setFittedSvgText('receiptVatRight', values.vat, 72, 7.3, 5);
+  setFittedSvgText('receiptVatLeft', values.vat, 72, 8.34091, 5);
+  setFittedSvgText('receiptVatRight', values.vat, 72, 8.34091, 5);
 
   ['patchReceiptDate', 'patchReceiptAmount', 'patchReceiptSerial',
     'patchFooterSerial', 'patchReceiptFrom', 'patchReceiptThrough',
@@ -617,7 +617,7 @@ async function documentSvg(documentName) {
     .company-name{font-family:"Arabic Full",Arial,sans-serif;font-size:14px;font-weight:700;fill:#000;direction:rtl;unicode-bidi:embed}.company-footer{font-size:6.5px;font-weight:400}
     .value{font-size:8.34091px;font-weight:400;fill:#000}.total-value{font-size:8.34091px;font-weight:700;fill:#000}.footer-value{font-size:7.5px;font-weight:400;fill:#000}
     .receipt-patch rect{fill:#fff}.receipt-latin{font-family:"PDF Wafeq","PDF Arial",Arial,sans-serif}.receipt-ar{font-family:"Arabic Full",Arial,sans-serif;direction:rtl;unicode-bidi:embed}.receipt-company-name{fill:#354058}
-    .receipt-header-vat{font-size:7.3px;font-weight:400;fill:#354058}.receipt-value{font-size:9px;font-weight:400;fill:#354058}.receipt-footer{font-size:7.5px;font-weight:400;fill:#000}
+    .receipt-header-vat{font-size:8.34091px;font-weight:400;fill:#354058}.receipt-value{font-size:9px;font-weight:400;fill:#354058}.receipt-footer{font-size:7.5px;font-weight:400;fill:#000}
   `;
   return {
     width,
