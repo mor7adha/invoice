@@ -437,7 +437,7 @@ function updateInvoiceQr(total, vat, visible) {
   }
   const parts = [
     tlv(1, $('fCompanyName').value.trim()),
-    tlv(2, $('fCustomerVat').value.trim()),
+    tlv(2, $('fCompanyVat').value.trim()),
     tlv(3, invoiceTimestamp($('fInvoiceDate').value)),
     tlv(4, money(total).replaceAll(',', '')),
     tlv(5, money(vat).replaceAll(',', ''))
@@ -453,7 +453,8 @@ function updateInvoiceQr(total, vat, visible) {
 function updateInvoice() {
   updateCompanyName();
   const values = {
-    customer: $('fCustomer').value, customerVat: $('fCustomerVat').value,
+    companyVat: $('fCompanyVat').value.trim(),
+    customer: $('fCustomer').value, customerVat: $('fCustomerVat').value.trim(),
     number: $('fInvoiceNo').value, date: $('fInvoiceDate').value, dueDate: $('fDueDate').value
   };
 
@@ -463,8 +464,8 @@ function updateInvoice() {
   $('vInvoiceDate').textContent = values.date;
   $('vDueDate').textContent = values.dueDate;
   $('footerInvoiceNo').textContent = values.number;
-  $('headerVatLeft').textContent = values.customerVat;
-  $('headerVatRight').textContent = values.customerVat;
+  $('headerVatLeft').textContent = values.companyVat;
+  $('headerVatRight').textContent = values.companyVat;
 
   ['patchCustomer', 'patchCustomerVat', 'patchInvoiceNo', 'patchFooterInvoiceNo',
     'patchInvoiceDate', 'patchDueDate', 'patchHeaderVatLeft', 'patchHeaderVatRight']
@@ -490,7 +491,7 @@ function updateInvoice() {
   setPatch('patchVatTotal', true);
   setPatch('patchGrandTotal', true);
   updateInvoiceQr(grandTotal, vatTotal, Boolean(
-    $('fCompanyName').value.trim() && values.date && values.customerVat.trim() && items.length
+    $('fCompanyName').value.trim() && values.date && values.companyVat && items.length
   ));
 
   // بيانات سند القبض تتبع الفاتورة الحالية مباشرة.
@@ -540,6 +541,7 @@ function setDocument(documentName) {
 
 function reset() {
   $('fCompanyName').value = defaults.company.name;
+  $('fCompanyVat').value = defaults.company.vat;
   $('fCustomer').value = defaults.invoice.customer;
   $('fCustomerVat').value = defaults.invoice.customerVat;
   $('fInvoiceNo').value = sequenceIdentifier('invoice');
@@ -762,7 +764,7 @@ $('addItem').addEventListener('click', () => {
   renderEditors();
   updateInvoice();
 });
-['fCustomer', 'fCustomerVat', 'fInvoiceNo', 'fDueDate'].forEach(id => $(id).addEventListener('input', updateInvoice));
+['fCompanyVat', 'fCustomer', 'fCustomerVat', 'fInvoiceNo', 'fDueDate'].forEach(id => $(id).addEventListener('input', updateInvoice));
 $('fCompanyName').addEventListener('input', () => {
   syncAutomaticCompanyLogo();
   updateInvoice();
@@ -814,6 +816,7 @@ window.addEventListener('storage', event => {
 });
 
 renderEditors();
+$('fCompanyVat').value = defaults.company.vat;
 $('fCustomerVat').value = defaults.invoice.customerVat;
 $('fInvoiceDate').value = localDateValue();
 $('fDueDate').value = localDateValue();
