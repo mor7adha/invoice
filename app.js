@@ -19,7 +19,7 @@ const defaults = {
     customer: '', customerVat: '311166413900003', number: '', date: '', dueDate: '', items: []
   },
   receipt: {
-    date: '', amount: '', serial: '', from: '', through: 'الخزنة 100', vat: '311441804500003'
+    date: '', amount: '', serial: '', from: '', through: 'الخزنة 100'
   },
   company: {
     name: 'شركة فودز للمواد الغذائية', vat: '311441804500003',
@@ -504,7 +504,8 @@ function updateReceipt() {
   updateCompanyName();
   const values = {
     date: $('rDate').value, amount: number($('rAmount').value), serial: $('rSerial').value,
-    from: $('rFrom').value, through: $('rThrough').value, vat: $('rVat').value.trim()
+    from: $('rFrom').value, through: $('rThrough').value,
+    vat: $('fCompanyVat').value.trim()
   };
 
   $('vrDate').textContent = values.date;
@@ -554,7 +555,6 @@ function reset() {
   $('rSerial').value = sequenceIdentifier('receipt');
   $('rFrom').value = defaults.receipt.from;
   $('rThrough').value = defaults.receipt.through;
-  $('rVat').value = defaults.receipt.vat;
   $('fCompanyLogo').value = '';
   companyLogoMode = 'automatic';
   syncAutomaticCompanyLogo();
@@ -782,7 +782,7 @@ $('fInvoiceDate').addEventListener('input', () => {
   invoiceDateManuallyEdited = true;
   updateInvoice();
 });
-['rDate', 'rAmount', 'rSerial', 'rFrom', 'rThrough', 'rVat'].forEach(id => $(id).addEventListener('input', updateReceipt));
+['rDate', 'rAmount', 'rSerial', 'rFrom', 'rThrough'].forEach(id => $(id).addEventListener('input', updateReceipt));
 $('resetBtn').addEventListener('click', reset);
 $('downloadPdf').addEventListener('click', downloadCurrentPdf);
 $('printBtn').addEventListener('click', async () => {
@@ -824,7 +824,6 @@ $('rDate').value = localDateValue();
 $('fInvoiceNo').value = sequenceIdentifier('invoice');
 $('rSerial').value = sequenceIdentifier('receipt');
 $('rThrough').value = defaults.receipt.through;
-$('rVat').value = defaults.receipt.vat;
 updateCompanyLogo();
 updateInvoice();
 updateReceipt();
