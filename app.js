@@ -30,6 +30,8 @@ const defaults = {
 let currentDoc = 'invoice';
 let items = structuredClone(defaults.invoice.items);
 let invoiceDateManuallyEdited = false;
+let dueDateManuallyEdited = false;
+let receiptDateManuallyEdited = false;
 let companyLogoSource = defaults.company.logo;
 let companyLogoLabel = defaults.company.logoLabel;
 let companyLogoMode = 'automatic';
@@ -48,12 +50,16 @@ function refreshAutomaticInvoiceDate() {
   if (!invoiceDateManuallyEdited && document.activeElement !== $('fInvoiceDate')) {
     $('fInvoiceDate').value = today;
   }
-  if (document.activeElement !== $('fDueDate')) $('fDueDate').value = today;
+  if (!dueDateManuallyEdited && document.activeElement !== $('fDueDate')) {
+    $('fDueDate').value = today;
+  }
   updateInvoice();
 }
 
 function refreshAutomaticReceiptDate() {
-  $('rDate').value = localDateValue();
+  if (!receiptDateManuallyEdited && document.activeElement !== $('rDate')) {
+    $('rDate').value = localDateValue();
+  }
   updateReceipt();
 }
 
@@ -547,6 +553,8 @@ function reset() {
   $('fCustomerVat').value = defaults.invoice.customerVat;
   $('fInvoiceNo').value = sequenceIdentifier('invoice');
   invoiceDateManuallyEdited = false;
+  dueDateManuallyEdited = false;
+  receiptDateManuallyEdited = false;
   $('fInvoiceDate').value = localDateValue();
   $('fDueDate').value = localDateValue();
   items = structuredClone(defaults.invoice.items);
@@ -764,7 +772,7 @@ $('addItem').addEventListener('click', () => {
   renderEditors();
   updateInvoice();
 });
-['fCompanyVat', 'fCustomer', 'fCustomerVat', 'fInvoiceNo', 'fDueDate'].forEach(id => $(id).addEventListener('input', updateInvoice));
+['fCompanyVat', 'fCustomer', 'fCustomerVat', 'fInvoiceNo'].forEach(id => $(id).addEventListener('input', updateInvoice));
 $('fCompanyName').addEventListener('input', () => {
   syncAutomaticCompanyLogo();
   updateInvoice();
@@ -778,11 +786,21 @@ $('removeCompanyLogo').addEventListener('click', () => {
   $('fCompanyLogo').value = '';
   updateCompanyLogo();
 });
-$('fInvoiceDate').addEventListener('input', () => {
-  invoiceDateManuallyEdited = true;
-  updateInvoice();
+['input', 'change'].forEach(eventName => {
+  $('fInvoiceDate').addEventListener(eventName, () => {
+    invoiceDateManuallyEdited = true;
+    updateInvoice();
+  });
+  $('fDueDate').addEventListener(eventName, () => {
+    dueDateManuallyEdited = true;
+    updateInvoice();
+  });
+  $('rDate').addEventListener(eventName, () => {
+    receiptDateManuallyEdited = true;
+    updateReceipt();
+  });
 });
-['rDate', 'rAmount', 'rSerial', 'rFrom', 'rThrough'].forEach(id => $(id).addEventListener('input', updateReceipt));
+['rAmount', 'rSerial', 'rFrom', 'rThrough'].forEach(id => $(id).addEventListener('input', updateReceipt));
 $('resetBtn').addEventListener('click', reset);
 $('downloadPdf').addEventListener('click', downloadCurrentPdf);
 $('printBtn').addEventListener('click', async () => {
