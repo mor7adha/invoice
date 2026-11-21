@@ -7,16 +7,11 @@
   const PAGE_WIDTH = 595.28;
   const PAGE_HEIGHT = 841.89;
   const DPI_SCALE = 300 / 72;
-  const initialRows = [
-    { description: 'PURCHASE INVOICE\n1005', document: 'INV-11812\n1001-0503-\n261108-00239', date: '2026-11-08', due: '2026-11-13', debit: '', credit: '19866.00' },
-    { description: 'PURCHASE INVOICE\n1005', document: 'INV-11815\n1001-0503-\n261112-00054', date: '2026-11-11', due: '2026-11-16', debit: '', credit: '45915.00' },
-    { description: 'سداد آجل يخص مؤسسة أسنام المراعي من سالم\n1005', document: 'SYS-CUS-PAY-\n4033\nPV-1005-261112-\n00129', date: '2026-11-12', due: '', debit: '19866.00', credit: '' },
-    { description: 'PURCHASE INVOICE\n1005', document: 'INV-11816\n1001-0503-\n261115-00009', date: '2026-11-15', due: '2026-11-20', debit: '', credit: '23026.01' },
-    { description: 'سداد آجل يخص مؤسسة أسنام المراعي من سالم\n1005', document: 'SYS-CUS-PAY-\n4036\nPV-1005-261116-\n001297', date: '2026-11-16', due: '', debit: '45915.00', credit: '' },
-    { description: 'PURCHASE INVOICE\n1005', document: 'INV-11817\n1001-0503-\n261117-00011', date: '2026-11-16', due: '2026-11-21', debit: '', credit: '16139.01' },
-    { description: 'PURCHASE INVOICE\n1005', document: 'INV-11820\n1001-0503-\n261119-00415', date: '2026-11-17', due: '2026-11-22', debit: '', credit: '25894.04' }
-  ];
-  let rows = structuredClone(initialRows);
+  const DEFAULT_LOGOS = {
+    header: { href: 'assets/فوق.jpeg', width: 1280, height: 666, viewBox: '149 63 990 515' },
+    footer: { href: 'assets/تحت.jpeg', width: 1168, height: 896, viewBox: '70 307 1047 281' }
+  };
+  let rows = [];
   let customLogo = '';
   let logoReadVersion = 0;
   let outputTime = new Date();
@@ -187,9 +182,9 @@
     };
   }
 
-  function referenceCrop(svg, x, y, width, height, source) {
-    const crop = element('svg', { x, y, width, height, viewBox: source, preserveAspectRatio: 'xMidYMid meet' });
-    crop.append(element('image', { href: 'assets/ref.jpeg', width: 725, height: 1080 }));
+  function drawLogo(svg, logo, x, y, width, height) {
+    const crop = element('svg', { x, y, width, height, viewBox: logo.viewBox, preserveAspectRatio: 'xMidYMid meet', overflow: 'hidden' });
+    crop.append(element('image', { href: logo.href, width: logo.width, height: logo.height }));
     svg.append(crop);
   }
 
@@ -201,7 +196,7 @@
     arabic(svg, `س.ت : ${byId('sRegistration').value}`, 703, 58, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
     arabic(svg, `ت : ${byId('sPhone').value}`, 703, 79, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
     if (customLogo) svg.append(element('image', { href: customLogo, x: 305, y: 18, width: 120, height: 67, preserveAspectRatio: 'xMidYMid meet' }));
-    else referenceCrop(svg, 305, 18, 120, 67, '305 18 120 67');
+    else drawLogo(svg, DEFAULT_LOGOS.header, 305, 18, 120, 67);
     const title = arabic(svg, byId('sTitle').value, 364, 117, { 'font-size': 17, 'font-weight': 700 });
     title.dataset.fitWidth = 550;
     const supplier = arabic(svg, `المورد : ${byId('sSupplier').value}`, 683, 141, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
@@ -288,7 +283,7 @@
       drawAging(svg, data, totalY + 87);
     }
     text(svg, footerDate(outputTime), 32, 1044, { 'text-anchor': 'start', 'font-size': 10.5, 'font-weight': 700, 'data-footer-date': '' });
-    referenceCrop(svg, 321, 1030, 78, 24, '321 1030 78 24');
+    drawLogo(svg, DEFAULT_LOGOS.footer, 321, 1030, 78, 24);
     text(svg, 'L: 0    U: 0', 484, 1047, { 'font-size': 11, 'font-weight': 700 });
     text(svg, `Page ${pageIndex + 1} of ${pageCount}`, 699, 1047, { 'text-anchor': 'end', 'font-size': 11, 'font-weight': 700 });
     const sheet = document.createElement('section');
