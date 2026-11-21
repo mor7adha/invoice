@@ -34,7 +34,7 @@
         <fieldset>
           <legend>بيانات كشف الحساب</legend>
           <label>عنوان الكشف<input id="sTitle" value="كشف حساب مورد"></label>
-          <label>المورد<input id="sSupplier" value="مؤسسة أسنام المراعي"></label>
+          <label>المورد<input id="sSupplier" value="مؤسسة أنسام الخزاعي"></label>
           <div class="field-grid">
             <label>رقم المورد<input id="sSupplierNo" value="692"></label>
             <label>العملة<input id="sCurrency" value="ريال سعودي"></label>
@@ -48,6 +48,7 @@
         </fieldset>
         <fieldset>
           <legend>الحركات</legend>
+          <p class="field-hint">يُحدد نوع الحركة تلقائيًا من رقم المستند: SYS مدين، وINV دائن.</p>
           <div id="sCounts" class="statement-counts" role="status" aria-live="polite"></div>
           <div id="sRowsEditor"></div>
           <button id="sAddRow" class="add-item" type="button">إضافة حركة</button>
