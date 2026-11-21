@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>كشف حساب مورد</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="statement.css">
+</head>
+<body class="statement-page">
+  <div class="app">
+    <aside class="panel">
+      <header class="panel-header">
+        <p class="eyebrow">كشف حساب مستقل</p>
+        <h1>كشف حساب مورد</h1>
+        <p>عدّل البيانات والحركات، وستظهر النتائج مباشرة في المعاينة.</p>
+      </header>
+      <nav class="statement-nav" aria-label="المستندات">
+        <a class="button secondary" href="index.html">الفاتورة وسند القبض</a>
+        <span aria-current="page">كشف حساب</span>
+      </nav>
+      <form id="statementForm">
+        <fieldset>
+          <legend>بيانات المنشأة</legend>
+          <label>اسم الشركة بالعربية<input id="sCompanyAr" value="شركة مظلة الدواء للأدوية"></label>
+          <label>اسم الشركة بالإنجليزية<textarea id="sCompanyEn" dir="ltr" rows="2">Mathalat Aldawaa Company For&#10;Med.</textarea></label>
+          <div class="field-grid">
+            <label>السجل التجاري<input id="sRegistration" value="7003816910" inputmode="numeric"></label>
+            <label>الهاتف<input id="sPhone" value="0118263063" inputmode="tel"></label>
+          </div>
+          <label>شعار الشركة (اختياري)<input id="sLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
+          <button id="sRestoreLogo" class="button secondary" type="button">استعادة شعار النموذج</button>
+        </fieldset>
+        <fieldset>
+          <legend>بيانات كشف الحساب</legend>
+          <label>عنوان الكشف<input id="sTitle" value="كشف حساب مورد"></label>
+          <label>المورد<input id="sSupplier" value="مؤسسة أسنام المراعي"></label>
+          <div class="field-grid">
+            <label>رقم المورد<input id="sSupplierNo" value="692"></label>
+            <label>العملة<input id="sCurrency" value="ريال سعودي"></label>
+          </div>
+          <div class="field-grid">
+            <label>من تاريخ<input id="sFrom" type="date" value="2026-01-01" required></label>
+            <label>إلى تاريخ<input id="sTo" type="date" value="2026-11-30" required></label>
+          </div>
+          <label>الرصيد الافتتاحي<input id="sOpening" type="number" step="0.01" value="0"></label>
+          <p class="field-hint">الرصيد = الرصيد الافتتاحي + الدائن − المدين. يُحسب عمر الرصيد حتى «إلى تاريخ» بحسب تاريخ الاستحقاق، أو تاريخ الحركة عند تركه فارغًا.</p>
+        </fieldset>
+        <fieldset>
+          <legend>الحركات</legend>
+          <div id="sCounts" class="statement-counts" role="status" aria-live="polite"></div>
+          <div id="sRowsEditor"></div>
+          <button id="sAddRow" class="add-item" type="button">إضافة حركة</button>
+          <p class="field-hint">تظهر الحركات بالترتيب المُدخل. تتضمن الإجماليات جميع الحركات المدخلة؛ حقلا الفترة يحددان الفترة المطبوعة ومرجع أعمار الرصيد.</p>
+        </fieldset>
+        <fieldset>
+          <legend>المبلغ كتابةً</legend>
+          <label>بالعربية (اتركه فارغًا للحساب التلقائي)<textarea id="sWordsAr" rows="2"></textarea></label>
+          <label>بالإنجليزية (اتركه فارغًا للحساب التلقائي)<textarea id="sWordsEn" dir="ltr" rows="2"></textarea></label>
+        </fieldset>
+        <p id="sMessage" class="statement-message" role="status" aria-live="polite"></p>
+        <div class="actions">
+          <button id="sDownload" class="button primary download-button" type="button">تنزيل PDF</button>
+          <button id="sReset" class="button secondary" type="button">تفريغ النموذج</button>
+          <button id="sPrint" class="button secondary" type="button">طباعة</button>
+        </div>
+      </form>
+    </aside>
+    <main class="workspace">
+      <div class="paper-wrap" id="sPreview" aria-label="معاينة كشف الحساب"></div>
+    </main>
+  </div>
+  <script src="statement.js"></script>
+</body>
+</html>
