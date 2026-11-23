@@ -186,7 +186,10 @@
   }
 
   function drawHeader(svg) {
-    drawCompanyHeader(svg, 28, 'end');
+    multiline(svg, byId('sCompanyEn').value, 28, 33, 325, { 'text-anchor': 'start', 'font-size': 13, 'font-weight': 700 });
+    text(svg, `C.R : ${byId('sRegistration').value}`, 28, 58, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+    multiline(svg, byId('sAddressEn').value, 28, 75, 325, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+    text(svg, `VAT No : ${byId('sCompanyVat').value}`, 28, 100, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
     drawCompanyHeader(svg, 703, 'start');
     const title = arabic(svg, byId('sTitle').value, 364, 128, { 'font-size': 17, 'font-weight': 700 });
     title.dataset.fitWidth = 550;
