@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>كشف حساب مورد</title>
+  <title>كشف حساب عميل</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="statement.css">
 </head>
@@ -12,7 +12,7 @@
     <aside class="panel">
       <header class="panel-header">
         <p class="eyebrow">كشف حساب مستقل</p>
-        <h1>كشف حساب مورد</h1>
+        <h1>كشف حساب عميل</h1>
         <p>عدّل البيانات والحركات، وستظهر النتائج مباشرة في المعاينة.</p>
       </header>
       <nav class="statement-nav" aria-label="المستندات">
@@ -22,23 +22,19 @@
       <form id="statementForm">
         <fieldset>
           <legend>بيانات المنشأة</legend>
-          <label>اسم الشركة بالعربية<input id="sCompanyAr" value="شركة مظلة الدواء للأدوية"></label>
-          <label>اسم الشركة بالإنجليزية<textarea id="sCompanyEn" dir="ltr" rows="2">Mathalat Aldawaa Company For&#10;Med.</textarea></label>
+          <label>اسم المنشأة بالعربية<input id="sCompanyAr" value="مؤسسة انسام الخزامي"></label>
+          <label>اسم المنشأة بالإنجليزية<textarea id="sCompanyEn" dir="ltr" rows="2">Ansam Al-Khuzami&#10;Establishment</textarea></label>
           <div class="field-grid">
-            <label>السجل التجاري<input id="sRegistration" value="7003816910" inputmode="numeric"></label>
-            <label>الهاتف<input id="sPhone" value="0118263063" inputmode="tel"></label>
+            <label>السجل التجاري<input id="sRegistration" value="7054470443" inputmode="numeric"></label>
+            <label>الرقم الضريبي<input id="sCompanyVat" value="300970767600003" inputmode="numeric"></label>
           </div>
-          <label>شعار الشركة (اختياري)<input id="sLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
-          <button id="sRestoreLogo" class="button secondary" type="button">استعادة شعار النموذج</button>
+          <label>العنوان<input id="sAddress" value="الدار البيضاء حي المصانع شارع بني عمار"></label>
         </fieldset>
         <fieldset>
           <legend>بيانات كشف الحساب</legend>
-          <label>عنوان الكشف<input id="sTitle" value="كشف حساب مورد"></label>
-          <label>المورد<input id="sSupplier" value="مؤسسة أنسام الخزامي"></label>
-          <div class="field-grid">
-            <label>رقم المورد<input id="sSupplierNo" value="692"></label>
-            <label>العملة<input id="sCurrency" value="ريال سعودي"></label>
-          </div>
+          <label>عنوان الكشف<input id="sTitle" value="كشف حساب عميل"></label>
+          <label>العميل<input id="sCustomer" value="شركة مظلة الدواء"></label>
+          <label>العملة<input id="sCurrency" value="ريال سعودي"></label>
           <div class="field-grid">
             <label>من تاريخ<input id="sFrom" type="date" value="2026-01-01" required></label>
             <label>إلى تاريخ<input id="sTo" type="date" value="2026-11-30" required></label>

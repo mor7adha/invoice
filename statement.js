@@ -7,13 +7,7 @@
   const PAGE_WIDTH = 595.28;
   const PAGE_HEIGHT = 841.89;
   const DPI_SCALE = 300 / 72;
-  const DEFAULT_LOGOS = {
-    header: { href: 'assets/فوق.jpeg', width: 1280, height: 666, viewBox: '149 63 990 515' },
-    footer: { href: 'assets/تحت.jpeg', width: 1168, height: 896, viewBox: '70 307 1047 281' }
-  };
   let rows = [];
-  let customLogo = '';
-  let logoReadVersion = 0;
   let outputTime = new Date();
   let busy = false;
   const embeddedAssets = new Map();
@@ -182,26 +176,20 @@
     };
   }
 
-  function drawLogo(svg, logo, x, y, width, height) {
-    const crop = element('svg', { x, y, width, height, viewBox: logo.viewBox, preserveAspectRatio: 'xMidYMid meet', overflow: 'hidden' });
-    crop.append(element('image', { href: logo.href, width: logo.width, height: logo.height }));
-    svg.append(crop);
-  }
-
   function drawHeader(svg) {
     multiline(svg, byId('sCompanyEn').value, 28, 35, 250, { 'text-anchor': 'start', 'font-size': 13, 'font-weight': 700 });
     text(svg, `C.R : ${byId('sRegistration').value}`, 28, 70, { 'text-anchor': 'start', 'font-size': 13, 'font-weight': 700 });
-    text(svg, `Tel : ${byId('sPhone').value}`, 28, 91, { 'text-anchor': 'start', 'font-size': 13, 'font-weight': 700 });
+    text(svg, `VAT No : ${byId('sCompanyVat').value}`, 28, 91, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
     multiline(svg, byId('sCompanyAr').value, 703, 33, 250, { 'text-anchor': 'start', 'font-size': 13, 'font-weight': 700 });
     arabic(svg, `س.ت : ${byId('sRegistration').value}`, 703, 58, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    arabic(svg, `ت : ${byId('sPhone').value}`, 703, 79, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    if (customLogo) svg.append(element('image', { href: customLogo, x: 305, y: 18, width: 120, height: 67, preserveAspectRatio: 'xMidYMid meet' }));
-    else drawLogo(svg, DEFAULT_LOGOS.header, 305, 18, 120, 67);
-    const title = arabic(svg, byId('sTitle').value, 364, 117, { 'font-size': 17, 'font-weight': 700 });
+    const address = arabic(svg, byId('sAddress').value, 703, 79, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+    address.dataset.fitWidth = 325;
+    const companyVat = arabic(svg, `الرقم الضريبي : ${byId('sCompanyVat').value}`, 703, 100, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+    companyVat.dataset.fitWidth = 325;
+    const title = arabic(svg, byId('sTitle').value, 364, 128, { 'font-size': 17, 'font-weight': 700 });
     title.dataset.fitWidth = 550;
-    const supplier = arabic(svg, `المورد : ${byId('sSupplier').value}`, 683, 141, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    supplier.dataset.fitWidth = 600;
-    arabic(svg, `رقم المورد : ${byId('sSupplierNo').value}`, 683, 164, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+    const customer = arabic(svg, `العميل : ${byId('sCustomer').value}`, 683, 151, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+    customer.dataset.fitWidth = 600;
     arabic(svg, `العملة : ${byId('sCurrency').value}`, 410, 166, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
     arabic(svg, 'من تاريخ :', 683, 189, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
     text(svg, longDate(byId('sFrom').value), 618, 189, { 'text-anchor': 'end', 'font-size': 12, 'font-weight': 700 });
@@ -283,8 +271,6 @@
       drawAging(svg, data, totalY + 87);
     }
     text(svg, footerDate(outputTime), 32, 1044, { 'text-anchor': 'start', 'font-size': 10.5, 'font-weight': 700, 'data-footer-date': '' });
-    drawLogo(svg, DEFAULT_LOGOS.footer, 321, 1030, 78, 24);
-    text(svg, 'L: 0    U: 0', 484, 1047, { 'font-size': 11, 'font-weight': 700 });
     text(svg, `Page ${pageIndex + 1} of ${pageCount}`, 699, 1047, { 'text-anchor': 'end', 'font-size': 11, 'font-weight': 700 });
     const sheet = document.createElement('section');
     sheet.className = 'paper statement-sheet';
@@ -409,10 +395,6 @@
       svg.setAttribute('height', PAGE_HEIGHT);
       const style = element('style', {}, `@font-face{font-family:"Statement Arabic";src:url("${regular}")}@font-face{font-family:"Statement Arabic";src:url("${bold}");font-weight:700}@font-face{font-family:"Statement Arial";src:url("${latin}");font-weight:400 700}`);
       svg.prepend(style);
-      await Promise.all([...svg.querySelectorAll('image')].map(async image => {
-        const href = image.getAttribute('href');
-        if (href && !href.startsWith('data:')) image.setAttribute('href', await embedded(href));
-      }));
     }
     return pages;
   }
@@ -500,49 +482,14 @@
     updatePreview();
     byId('sRowsEditor').lastElementChild.querySelector('textarea').focus();
   });
-  byId('sLogo').addEventListener('change', async event => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const version = ++logoReadVersion;
-    if (!['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'].includes(file.type)) {
-      byId('sMessage').textContent = 'اختر صورة PNG أو JPG أو WebP أو SVG للشعار.';
-      return;
-    }
-    try {
-      const source = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      const image = new Image();
-      image.src = source;
-      await image.decode();
-      if (version !== logoReadVersion) return;
-      customLogo = source;
-      byId('sMessage').textContent = '';
-      updatePreview();
-    } catch {
-      byId('sMessage').textContent = 'تعذر قراءة الشعار. اختر صورة صالحة.';
-    }
-  });
-  byId('sRestoreLogo').addEventListener('click', () => {
-    logoReadVersion++;
-    customLogo = '';
-    byId('sLogo').value = '';
-    updatePreview();
-  });
   byId('sReset').addEventListener('click', () => {
     byId('statementForm').reset();
     rows = [];
-    byId('sSupplier').value = '';
-    byId('sSupplierNo').value = '';
+    byId('sCustomer').value = '';
     byId('sFrom').value = isoToday();
     byId('sTo').value = isoToday();
     byId('sTo').setCustomValidity('');
     byId('sMessage').textContent = '';
-    customLogo = '';
-    logoReadVersion++;
     outputTime = new Date();
     renderEditors();
     updatePreview();
@@ -558,8 +505,8 @@
       const url = URL.createObjectURL(pdfFromImages(images));
       const link = document.createElement('a');
       link.href = url;
-      const supplier = byId('sSupplier').value.trim().replace(/[\\/:*?"<>|]+/g, '-');
-      link.download = `كشف حساب${supplier ? ` - ${supplier}` : ''} - ${byId('sTo').value}.pdf`;
+      const customer = byId('sCustomer').value.trim().replace(/[\\/:*?"<>|]+/g, '-');
+      link.download = `كشف حساب عميل${customer ? ` - ${customer}` : ''} - ${byId('sTo').value}.pdf`;
       document.body.append(link);
       link.click();
       link.remove();
@@ -577,12 +524,6 @@
     byId('sMessage').textContent = '';
     try {
       await document.fonts.ready;
-      await Promise.all([...byId('sPreview').querySelectorAll('image')].map(node => new Promise((resolve, reject) => {
-        const image = new Image();
-        image.onload = resolve;
-        image.onerror = reject;
-        image.src = node.getAttribute('href');
-      })));
       outputTime = new Date();
       updatePreview();
       window.print();
