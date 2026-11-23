@@ -176,16 +176,18 @@
     };
   }
 
-  function drawHeader(svg) {
-    multiline(svg, byId('sCompanyEn').value, 28, 35, 250, { 'text-anchor': 'start', 'font-size': 13, 'font-weight': 700 });
-    text(svg, `C.R : ${byId('sRegistration').value}`, 28, 70, { 'text-anchor': 'start', 'font-size': 13, 'font-weight': 700 });
-    text(svg, `VAT No : ${byId('sCompanyVat').value}`, 28, 91, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    multiline(svg, byId('sCompanyAr').value, 703, 33, 250, { 'text-anchor': 'start', 'font-size': 13, 'font-weight': 700 });
-    arabic(svg, `س.ت : ${byId('sRegistration').value}`, 703, 58, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    const address = arabic(svg, byId('sAddress').value, 703, 79, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+  function drawCompanyHeader(svg, x, anchor) {
+    multiline(svg, byId('sCompanyAr').value, x, 33, 250, { 'text-anchor': anchor, 'font-size': 13, 'font-weight': 700 });
+    arabic(svg, `س.ت : ${byId('sRegistration').value}`, x, 58, { 'text-anchor': anchor, 'font-size': 12, 'font-weight': 700 });
+    const address = arabic(svg, byId('sAddress').value, x, 79, { 'text-anchor': anchor, 'font-size': 12, 'font-weight': 700 });
     address.dataset.fitWidth = 325;
-    const companyVat = arabic(svg, `الرقم الضريبي : ${byId('sCompanyVat').value}`, 703, 100, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+    const companyVat = arabic(svg, `الرقم الضريبي : ${byId('sCompanyVat').value}`, x, 100, { 'text-anchor': anchor, 'font-size': 12, 'font-weight': 700 });
     companyVat.dataset.fitWidth = 325;
+  }
+
+  function drawHeader(svg) {
+    drawCompanyHeader(svg, 28, 'end');
+    drawCompanyHeader(svg, 703, 'start');
     const title = arabic(svg, byId('sTitle').value, 364, 128, { 'font-size': 17, 'font-weight': 700 });
     title.dataset.fitWidth = 550;
     const customer = arabic(svg, `العميل : ${byId('sCustomer').value}`, 683, 151, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
