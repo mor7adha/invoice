@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>كشف حساب عميل</title>
+  <title>كشف حساب مورد</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="statement.css">
 </head>
@@ -12,7 +12,7 @@
     <aside class="panel">
       <header class="panel-header">
         <p class="eyebrow">كشف حساب مستقل</p>
-        <h1>كشف حساب عميل</h1>
+        <h1>كشف حساب مورد</h1>
         <p>عدّل البيانات والحركات، وستظهر النتائج مباشرة في المعاينة.</p>
       </header>
       <nav class="statement-nav" aria-label="المستندات">
@@ -33,7 +33,7 @@
         </fieldset>
         <fieldset>
           <legend>بيانات كشف الحساب</legend>
-          <label>عنوان الكشف<input id="sTitle" value="كشف حساب عميل"></label>
+          <label>عنوان الكشف<input id="sTitle" value="كشف حساب مورد"></label>
           <label>العميل<input id="sCustomer" value="شركة مظلة الدواء"></label>
           <label>العملة<input id="sCurrency" value="ريال سعودي"></label>
           <div class="field-grid">
@@ -45,7 +45,6 @@
         </fieldset>
         <fieldset>
           <legend>الحركات</legend>
-          <p class="field-hint">يُحدد نوع الحركة تلقائيًا من رقم المستند: SYS مدين، وINV دائن.</p>
           <div id="sCounts" class="statement-counts" role="status" aria-live="polite"></div>
           <div id="sRowsEditor"></div>
           <button id="sAddRow" class="add-item" type="button">إضافة حركة</button>

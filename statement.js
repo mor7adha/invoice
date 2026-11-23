@@ -308,27 +308,6 @@
     return label;
   }
 
-  function syncMovementSide(row, editor) {
-    const prefix = String(row.document).match(/\b(SYS|INV)(?=$|[^a-z])/i)?.[1].toUpperCase();
-    const side = prefix === 'SYS' ? 'debit' : prefix === 'INV' ? 'credit' : null;
-    const opposite = side === 'debit' ? 'credit' : 'debit';
-    if (side && cents(row[side]) === 0 && cents(row[opposite]) > 0) {
-      row[side] = row[opposite];
-      row[opposite] = '';
-    }
-    const conflict = Boolean(side && cents(row[side]) > 0 && cents(row[opposite]) > 0);
-    ['debit', 'credit'].forEach(field => {
-      const input = editor.querySelector(`[data-field="${field}"]`);
-      if (input.value !== row[field]) input.value = row[field];
-      input.readOnly = Boolean(side && field !== side && !conflict);
-      input.setCustomValidity(conflict && field === opposite
-        ? `رقم المستند ${prefix} يحدد الحركة كـ${side === 'debit' ? 'مدين' : 'دائن'}. امسح المبلغ من الجانب الآخر.`
-        : '');
-    });
-    const index = Number(editor.dataset.index) + 1;
-    editor.querySelector('.item-head span').textContent = `الحركة ${index}${side ? ` · ${side === 'debit' ? 'مدين' : 'دائن'} تلقائيًا (${prefix})` : ''}`;
-  }
-
   function renderEditors() {
     byId('sRowsEditor').replaceChildren(...rows.map((row, index) => {
       const editor = document.createElement('div');
@@ -358,7 +337,6 @@
       amounts.className = 'field-grid';
       amounts.append(createField('مدين', 'debit', row.debit, 'number'), createField('دائن', 'credit', row.credit, 'number'));
       editor.append(dates, amounts);
-      syncMovementSide(row, editor);
       return editor;
     }));
   }
@@ -472,7 +450,6 @@
     const editor = event.target.closest('[data-index]');
     const row = rows[Number(editor.dataset.index)];
     row[field] = event.target.value;
-    if (['document', 'debit', 'credit'].includes(field)) syncMovementSide(row, editor);
     updatePreview();
   });
   byId('statementForm').addEventListener('submit', event => event.preventDefault());
@@ -511,7 +488,7 @@
       const link = document.createElement('a');
       link.href = url;
       const customer = byId('sCustomer').value.trim().replace(/[\\/:*?"<>|]+/g, '-');
-      link.download = `كشف حساب عميل${customer ? ` - ${customer}` : ''} - ${byId('sTo').value}.pdf`;
+      link.download = `كشف حساب مورد${customer ? ` - ${customer}` : ''} - ${byId('sTo').value}.pdf`;
       document.body.append(link);
       link.click();
       link.remove();
