@@ -12,7 +12,7 @@
     <aside class="panel">
       <header class="panel-header">
         <p class="eyebrow">كشف حساب مستقل</p>
-        <h1>كشف حساب مورد</h1>
+        <h1 id="sPanelTitle">كشف حساب مورد</h1>
         <p>عدّل البيانات والحركات، وستظهر النتائج مباشرة في المعاينة.</p>
       </header>
       <nav class="statement-nav" aria-label="المستندات">
@@ -34,8 +34,12 @@
         <fieldset>
           <legend>بيانات كشف الحساب</legend>
           <label>عنوان الكشف<input id="sTitle" value="كشف حساب مورد"></label>
-          <label>العميل<input id="sCustomer" value="شركة مظلة الدواء"></label>
-          <label>العملة<input id="sCurrency" value="ريال سعودي"></label>
+          <label>صفة الطرف (عميل / مورد)<input id="sLabelParty" value="العميل"></label>
+          <label>اسم الطرف<input id="sCustomer" value="شركة مظلة الدواء"></label>
+          <div class="field-grid">
+            <label>العملة بالعربية<input id="sCurrency" value="ريال سعودي"></label>
+            <label>العملة بالإنجليزية<input id="sCurrencyEn" dir="ltr" value="Saudi Riyals"></label>
+          </div>
           <div class="field-grid">
             <label>من تاريخ<input id="sFrom" type="date" value="2026-01-01" required></label>
             <label>إلى تاريخ<input id="sTo" type="date" value="2026-11-30" required></label>
@@ -52,9 +56,78 @@
         </fieldset>
         <fieldset>
           <legend>المبلغ كتابةً</legend>
+          <div class="field-grid">
+            <label>اسم الجزء من العملة بالعربية<input id="sFractionAr" value="هللة"></label>
+            <label>اسم الجزء بالإنجليزية<input id="sFractionEn" dir="ltr" value="Halalas"></label>
+          </div>
           <label>بالعربية (اتركه فارغًا للحساب التلقائي)<textarea id="sWordsAr" rows="2"></textarea></label>
           <label>بالإنجليزية (اتركه فارغًا للحساب التلقائي)<textarea id="sWordsEn" dir="ltr" rows="2"></textarea></label>
         </fieldset>
+        <p class="field-hint customization-hint">افتح الأقسام التالية لتعديل النصوص والعناوين والتذييل. تظهر التغييرات في المعاينة والطباعة وPDF، وتبقى الأرصدة والإجماليات محسوبة من الحركات.</p>
+        <details class="statement-options">
+          <summary>تسميات الترويسة والفترة</summary>
+          <div class="statement-option-body">
+            <div class="field-grid">
+              <label>عنوان السجل بالعربية<input id="sLabelRegistrationAr" value="س.ت"></label>
+              <label>عنوان السجل بالإنجليزية<input id="sLabelRegistrationEn" dir="ltr" value="C.R"></label>
+              <label>عنوان الضريبة بالعربية<input id="sLabelTaxAr" value="الرقم الضريبي"></label>
+              <label>عنوان الضريبة بالإنجليزية<input id="sLabelTaxEn" dir="ltr" value="VAT No"></label>
+              <label>عنوان العملة<input id="sLabelCurrency" value="العملة"></label>
+              <label>عنوان بداية الفترة<input id="sLabelFrom" value="من تاريخ"></label>
+              <label>عنوان نهاية الفترة<input id="sLabelTo" value="إلى تاريخ"></label>
+            </div>
+            <label>تنسيق تاريخ الفترة<select id="sPeriodDateFormat"><option value="long">إنجليزي مع اسم الشهر</option><option value="iso">أرقام: سنة ثم شهر ثم يوم</option><option value="numeric">أرقام: يوم ثم شهر ثم سنة</option><option value="ar">عربي مع اسم الشهر</option></select></label>
+          </div>
+        </details>
+        <details class="statement-options">
+          <summary>عناوين أعمدة الحركات</summary>
+          <div class="statement-option-body field-grid">
+            <label>عنوان عمود الوصف<input id="sColDescription" value="الوصف"></label>
+            <label>عنوان عمود المستند<input id="sColDocument" value="رقم المستند"></label>
+            <label>عنوان عمود التاريخ<input id="sColDate" value="تاريخ"></label>
+            <label>عنوان عمود المدين<input id="sColDebit" value="مدين"></label>
+            <label>عنوان عمود الدائن<input id="sColCredit" value="دائن"></label>
+            <label>عنوان عمود الرصيد<input id="sColBalance" value="الرصيد"></label>
+          </div>
+        </details>
+        <details class="statement-options">
+          <summary>نصوص الأرصدة والإجماليات</summary>
+          <div class="statement-option-body">
+            <label>عنوان الرصيد الافتتاحي<input id="sLabelOpening" value="الرصيد الافتتاحي"></label>
+            <label>عنوان الرصيد المرحل<input id="sLabelCarry" value="الرصيد المرحل"></label>
+            <label>عنوان صف الإجمالي<input id="sLabelTotal" value="الإجمالي"></label>
+            <div class="field-grid">
+              <label>عنوان إجمالي المدين<input id="sAgingDebitLabel" value="إجمالي المدين"></label>
+              <label>عنوان إجمالي الدائن<input id="sAgingCreditLabel" value="إجمالي الدائن"></label>
+            </div>
+          </div>
+        </details>
+        <details class="statement-options">
+          <summary>فترات أعمار الرصيد</summary>
+          <div class="statement-option-body">
+            <p class="field-hint">حدّد نهاية كل فترة بالأيام بترتيب تصاعدي. تتغير عناوين الفترات وحساب مبالغها معًا، وما يتجاوز الفترة الرابعة يظهر في الفترة الخامسة.</p>
+            <div class="field-grid">
+              <label>نهاية الفترة الأولى<input id="sAge1" type="number" min="1" max="36500" step="1" value="30" required></label>
+              <label>نهاية الفترة الثانية<input id="sAge2" type="number" min="1" max="36500" step="1" value="60" required></label>
+              <label>نهاية الفترة الثالثة<input id="sAge3" type="number" min="1" max="36500" step="1" value="90" required></label>
+              <label>نهاية الفترة الرابعة<input id="sAge4" type="number" min="1" max="36500" step="1" value="120" required></label>
+            </div>
+          </div>
+        </details>
+        <details class="statement-options">
+          <summary>التذييل وعرض الصفحات</summary>
+          <div class="statement-option-body">
+            <label>نص إضافي في منتصف التذييل (اختياري)<textarea id="sFooterText" rows="2"></textarea></label>
+            <div class="field-grid">
+              <label>كلمة الصفحة<input id="sFooterPageLabel" dir="ltr" value="Page"></label>
+              <label>كلمة «من» بين أرقام الصفحات<input id="sFooterOfLabel" dir="ltr" value="of"></label>
+            </div>
+            <label>عدد الحركات في الصفحة<input id="sRowsPerPage" type="number" min="1" max="12" step="1" value="12" required></label>
+            <p class="field-hint">من 1 إلى 12 حركة في الصفحة للحفاظ على مساحة الإجماليات والتذييل.</p>
+            <label>تنسيق تاريخ الطباعة<select id="sFooterDateFormat"><option value="long">إنجليزي مع اليوم والوقت</option><option value="numeric">تاريخ ووقت بالأرقام</option><option value="ar">عربي مع اليوم والوقت</option></select></label>
+            <p class="field-hint">يُحدّث وقت التذييل تلقائيًا عند الطباعة أو التنزيل.</p>
+          </div>
+        </details>
         <p id="sMessage" class="statement-message" role="status" aria-live="polite"></p>
         <div class="actions">
           <button id="sDownload" class="button primary download-button" type="button">تنزيل PDF</button>

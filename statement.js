@@ -7,6 +7,8 @@
   const PAGE_WIDTH = 595.28;
   const PAGE_HEIGHT = 841.89;
   const DPI_SCALE = 300 / 72;
+  const AGE_FIELDS = ['sAge1', 'sAge2', 'sAge3', 'sAge4'];
+  let lastValidAgeLimits = [30, 60, 90, 120];
   let rows = [];
   let outputTime = new Date();
   let busy = false;
@@ -32,6 +34,47 @@
     return text(svg, value, x, y, {
       'font-family': 'Statement Arabic, Arabic Full, Arial, sans-serif',
       direction: 'rtl', 'unicode-bidi': 'plaintext', ...options
+    });
+  }
+
+  function fittedText(svg, value, x, y, width, align = 'center', options = {}) {
+    const content = String(value ?? '');
+    const rtl = /[\u0600-\u06ff]/.test(content);
+    const anchor = align === 'left' ? (rtl ? 'end' : 'start') : align === 'right' ? (rtl ? 'start' : 'end') : 'middle';
+    const node = (rtl ? arabic : text)(svg, content, x, y, { ...options, 'text-anchor': anchor });
+    node.dataset.fitWidth = width;
+    return node;
+  }
+
+  function caption(id, value) {
+    const label = byId(id).value.trim().replace(/[:：]\s*$/, '');
+    return label ? `${label} : ${value}` : String(value);
+  }
+
+  function isolated(value) {
+    return value ? `${/[\u0600-\u06ff]/.test(value) ? '\u2067' : '\u2066'}${value}\u2069` : '';
+  }
+
+  function rowsPerPage() {
+    const value = Number(byId('sRowsPerPage').value);
+    return Number.isInteger(value) && value >= 1 && value <= ROWS_PER_PAGE ? value : ROWS_PER_PAGE;
+  }
+
+  function ageLimits() {
+    const values = AGE_FIELDS.map(id => Number(byId(id).value));
+    if (values.every((value, index) => Number.isInteger(value) && value >= 1 && value <= 36500 && (!index || value > values[index - 1]))) {
+      lastValidAgeLimits = values;
+    }
+    return lastValidAgeLimits;
+  }
+
+  function validateAgeLimits() {
+    AGE_FIELDS.forEach((id, index) => {
+      const field = byId(id);
+      const previous = index ? byId(AGE_FIELDS[index - 1]) : null;
+      field.setCustomValidity(previous && previous.value && field.value && Number(field.value) <= Number(previous.value)
+        ? 'يجب أن تكون نهاية هذه الفترة أكبر من نهاية الفترة السابقة.'
+        : '');
     });
   }
 
@@ -84,12 +127,19 @@
     if (!value) return '';
     const date = new Date(`${value}T12:00:00`);
     if (!Number.isFinite(date.getTime())) return '';
+    const format = byId('sPeriodDateFormat').value;
+    if (format === 'iso') return value;
+    if (format === 'numeric') return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+    if (format === 'ar') return date.toLocaleDateString('ar-SA', { calendar: 'gregory', numberingSystem: 'latn', day: 'numeric', month: 'long', year: 'numeric' });
     return `${date.getDate()} ${date.toLocaleString('en-GB', { month: 'long' })}, ${date.getFullYear()}`;
   }
 
   function footerDate(date) {
     const pad = n => String(n).padStart(2, '0');
     const hour = date.getHours();
+    const format = byId('sFooterDateFormat').value;
+    if (format === 'numeric') return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(hour)}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    if (format === 'ar') return date.toLocaleString('ar-SA', { calendar: 'gregory', numberingSystem: 'latn', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
     return `${date.toLocaleString('en-GB', { weekday: 'long' })}, ${date.getDate()} ${date.toLocaleString('en-GB', { month: 'long' })}, ${date.getFullYear()} ${pad(hour % 12 || 12)}:${pad(date.getMinutes())}:${pad(date.getSeconds())} ${hour >= 12 ? 'PM' : 'AM'}`;
   }
 
@@ -114,6 +164,7 @@
 
   function aging(data) {
     const buckets = Array.from({ length: 5 }, () => ({ count: 0, amount: 0 }));
+    const limits = ageLimits();
     const asOf = Date.parse(`${byId('sTo').value}T00:00:00Z`);
     const liabilities = data.movements.filter(row => row.creditValue > 0).map(row => ({
       amount: row.creditValue, due: row.due || row.date || byId('sTo').value, counted: true
@@ -126,7 +177,8 @@
       const settled = Math.min(payments, item.amount);
       payments -= settled;
       const days = Math.max(0, Math.floor((asOf - Date.parse(`${item.due}T00:00:00Z`)) / 86400000)) || 0;
-      const index = days <= 30 ? 0 : days <= 60 ? 1 : days <= 90 ? 2 : days <= 120 ? 3 : 4;
+      const matchingPeriod = limits.findIndex(limit => days <= limit);
+      const index = matchingPeriod === -1 ? 4 : matchingPeriod;
       buckets[index].amount += item.amount - settled;
       if (item.counted) buckets[index].count++;
     });
@@ -169,46 +221,45 @@
     const units = Math.floor(absolute / 100);
     const fraction = absolute % 100;
     const currency = byId('sCurrency').value.trim();
-    const saudi = currency === 'ريال سعودي';
+    const currencyEn = byId('sCurrencyEn').value.trim();
+    const fractionAr = byId('sFractionAr').value.trim();
+    const fractionEn = byId('sFractionEn').value.trim();
     return {
-      ar: byId('sWordsAr').value || `فقط ${value < 0 ? 'سالب ' : ''}${arabicNumber(units)} ${currency}${fraction ? ` و${arabicNumber(fraction)} ${saudi ? 'هللة' : 'جزء من مائة'}` : ''} لا غير.`,
-      en: byId('sWordsEn').value || `${value < 0 ? 'Minus ' : ''}${englishNumber(units)} ${saudi ? 'Saudi Riyals' : currency}${fraction ? ` and ${englishNumber(fraction)} ${saudi ? 'Halalas' : 'Hundredths'}` : ''} only.`
+      ar: byId('sWordsAr').value || `فقط ${value < 0 ? 'سالب ' : ''}${arabicNumber(units)} ${currency}${fraction ? ` و${arabicNumber(fraction)} ${fractionAr}` : ''} لا غير.`,
+      en: byId('sWordsEn').value || `${value < 0 ? 'Minus ' : ''}${englishNumber(units)} ${currencyEn}${fraction ? ` and ${englishNumber(fraction)} ${fractionEn}` : ''} only.`
     };
   }
 
   function drawCompanyHeader(svg, x, anchor) {
     multiline(svg, byId('sCompanyAr').value, x, 33, 250, { 'text-anchor': anchor, 'font-size': 13, 'font-weight': 700 });
-    arabic(svg, `س.ت : ${byId('sRegistration').value}`, x, 58, { 'text-anchor': anchor, 'font-size': 12, 'font-weight': 700 });
-    const address = arabic(svg, byId('sAddress').value, x, 79, { 'text-anchor': anchor, 'font-size': 12, 'font-weight': 700 });
-    address.dataset.fitWidth = 325;
-    const companyVat = arabic(svg, `الرقم الضريبي : ${byId('sCompanyVat').value}`, x, 100, { 'text-anchor': anchor, 'font-size': 12, 'font-weight': 700 });
-    companyVat.dataset.fitWidth = 325;
+    fittedText(svg, caption('sLabelRegistrationAr', byId('sRegistration').value), x, 58, 325, 'right', { 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, byId('sAddress').value, x, 79, 325, 'right', { 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, caption('sLabelTaxAr', byId('sCompanyVat').value), x, 100, 325, 'right', { 'font-size': 12, 'font-weight': 700 });
   }
 
   function drawHeader(svg) {
     multiline(svg, byId('sCompanyEn').value.replace(/\s+/g, ' ').trim(), 28, 33, 325, { 'text-anchor': 'start', 'font-size': 13, 'font-weight': 700 });
-    text(svg, `C.R : ${byId('sRegistration').value}`, 28, 58, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, caption('sLabelRegistrationEn', byId('sRegistration').value), 28, 58, 325, 'left', { 'font-size': 12, 'font-weight': 700 });
     multiline(svg, byId('sAddressEn').value, 28, 75, 325, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    text(svg, `VAT No : ${byId('sCompanyVat').value}`, 28, 100, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, caption('sLabelTaxEn', byId('sCompanyVat').value), 28, 100, 325, 'left', { 'font-size': 12, 'font-weight': 700 });
     drawCompanyHeader(svg, 703, 'start');
     const title = arabic(svg, byId('sTitle').value, 364, 128, { 'font-size': 17, 'font-weight': 700 });
     title.dataset.fitWidth = 550;
-    const customer = arabic(svg, `العميل : ${byId('sCustomer').value}`, 683, 151, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    customer.dataset.fitWidth = 600;
-    arabic(svg, `العملة : ${byId('sCurrency').value}`, 410, 166, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    arabic(svg, 'من تاريخ :', 683, 189, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    text(svg, longDate(byId('sFrom').value), 618, 189, { 'text-anchor': 'end', 'font-size': 12, 'font-weight': 700 });
-    arabic(svg, 'إلى تاريخ :', 345, 189, { 'text-anchor': 'start', 'font-size': 12, 'font-weight': 700 });
-    text(svg, longDate(byId('sTo').value), 284, 189, { 'text-anchor': 'end', 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, caption('sLabelParty', byId('sCustomer').value), 683, 151, 600, 'right', { 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, caption('sLabelCurrency', byId('sCurrency').value), 410, 166, 350, 'right', { 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, caption('sLabelFrom', isolated(longDate(byId('sFrom').value))), 683, 189, 325, 'right', { 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, caption('sLabelTo', isolated(longDate(byId('sTo').value))), 345, 189, 310, 'right', { 'font-size': 12, 'font-weight': 700 });
   }
 
   function drawAging(svg, data, y) {
     const edges = [32, 139, 245, 337, 429, 521, 609, 695];
     box(svg, 32, y, 663, 54);
-    const labels = ['إجمالي المدين', 'إجمالي الدائن', '> 120', '91 - 120', '61 - 90', '31 - 60', '0 - 30'];
+    const limits = ageLimits();
+    const periods = limits.map((limit, index) => `${index ? limits[index - 1] + 1 : 0} - ${limit}`);
+    const labels = [byId('sAgingDebitLabel').value, byId('sAgingCreditLabel').value, `> ${limits[3]}`, ...periods.reverse()];
     labels.forEach((label, i) => {
       const x = (edges[i] + edges[i + 1]) / 2;
-      (i < 2 ? arabic : text)(svg, label, x, y + 17, { 'font-size': 12, 'font-weight': 700 });
+      fittedText(svg, label, x, y + 17, edges[i + 1] - edges[i] - 8, 'center', { 'font-size': 12, 'font-weight': 700 });
     });
     text(svg, money(data.debit), 85.5, y + 43, { 'font-size': 12, 'font-weight': 700, 'data-summary': 'debit' });
     text(svg, money(data.credit), 192, y + 43, { 'font-size': 12, 'font-weight': 700, 'data-summary': 'credit' });
@@ -219,21 +270,21 @@
     });
   }
 
-  function renderPage(data, pageIndex, pageCount) {
+  function renderPage(data, pageIndex, pageCount, pageRowCount) {
     const svg = element('svg', { xmlns: NS, viewBox: '0 0 725 1080', preserveAspectRatio: 'none', role: 'img', 'aria-label': `كشف حساب، صفحة ${pageIndex + 1} من ${pageCount}` });
     svg.append(element('rect', { width: 725, height: 1080, fill: '#fff' }));
     drawHeader(svg);
-    const start = pageIndex * ROWS_PER_PAGE;
-    const pageRows = data.movements.slice(start, start + ROWS_PER_PAGE);
+    const start = pageIndex * pageRowCount;
+    const pageRows = data.movements.slice(start, start + pageRowCount);
     const opening = start ? data.movements[start - 1].balance : cents(byId('sOpening').value);
     const edges = [25, 127, 204, 281, 359, 449, 704];
     box(svg, 25, 197, 679, 26);
-    ['الرصيد', 'دائن', 'مدين', 'تاريخ', 'رقم المستند', 'الوصف'].forEach((label, i) => {
+    ['sColBalance', 'sColCredit', 'sColDebit', 'sColDate', 'sColDocument', 'sColDescription'].forEach((id, i) => {
       if (i > 0) line(svg, edges[i], 197, edges[i], 223);
-      arabic(svg, label, (edges[i] + edges[i + 1]) / 2, 215, { 'font-size': 12, 'font-weight': 700 });
+      fittedText(svg, byId(id).value, (edges[i] + edges[i + 1]) / 2, 215, edges[i + 1] - edges[i] - 8, 'center', { 'font-size': 12, 'font-weight': 700 });
     });
     box(svg, 25, 223, 679, 25);
-    arabic(svg, start ? 'الرصيد المرحل' : 'الرصيد الافتتاحي', 531, 240, { 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, byId(start ? 'sLabelCarry' : 'sLabelOpening').value, 531, 240, 200, 'center', { 'font-size': 12, 'font-weight': 700 });
     text(svg, money(opening), 421, 240, { 'font-size': 12, 'font-weight': 700 });
     pageRows.forEach((row, index) => {
       const y = 248 + index * 45;
@@ -259,7 +310,7 @@
     const pageCredit = pageRows.reduce((sum, row) => sum + row.creditValue, 0);
     const pageDebit = pageRows.reduce((sum, row) => sum + row.debitValue, 0);
     box(svg, 25, totalY, 679, 22, '#e4e9e7');
-    arabic(svg, lastPage ? 'الإجمالي' : 'الرصيد المرحل', 634, totalY + 16, { 'font-size': 12, 'font-weight': 700 });
+    fittedText(svg, byId(lastPage ? 'sLabelTotal' : 'sLabelCarry').value, 634, totalY + 16, 130, 'center', { 'font-size': 12, 'font-weight': 700 });
     text(svg, lastPage ? rows.length : pageRows.length, 498, totalY + 16, { 'font-size': 12, 'font-weight': 700, 'data-count': 'movements' });
     text(svg, lastPage ? data.debitCount : pageRows.filter(row => row.debitValue > 0).length, 404, totalY + 16, { 'font-size': 12, 'font-weight': 700, 'data-count': 'debit' });
     text(svg, lastPage ? data.creditCount : pageRows.filter(row => row.creditValue > 0).length, 320, totalY + 16, { 'font-size': 12, 'font-weight': 700, 'data-count': 'credit' });
@@ -275,8 +326,10 @@
       ar.dataset.fitWidth = en.dataset.fitWidth = 670;
       drawAging(svg, data, totalY + 87);
     }
-    text(svg, footerDate(outputTime), 32, 1044, { 'text-anchor': 'start', 'font-size': 10.5, 'font-weight': 700, 'data-footer-date': '' });
-    text(svg, `Page ${pageIndex + 1} of ${pageCount}`, 699, 1047, { 'text-anchor': 'end', 'font-size': 11, 'font-weight': 700 });
+    fittedText(svg, footerDate(outputTime), 32, 1044, 260, 'left', { 'font-size': 10.5, 'font-weight': 700, 'data-footer-date': '' });
+    fittedText(svg, byId('sFooterText').value.replace(/\s+/g, ' ').trim(), 461, 1047, 270, 'center', { 'font-size': 11 });
+    const pageLabel = [byId('sFooterPageLabel').value.trim(), pageIndex + 1, byId('sFooterOfLabel').value.trim(), pageCount].filter(value => value !== '').join(' ');
+    fittedText(svg, pageLabel, 699, 1047, 100, 'right', { 'font-size': 11, 'font-weight': 700 });
     const sheet = document.createElement('section');
     sheet.className = 'paper statement-sheet';
     sheet.append(svg);
@@ -286,13 +339,18 @@
   function updatePreview() {
     const data = calculate();
     byId('sCounts').textContent = `${rows.length} حركات · ${data.debitCount} مدين · ${data.creditCount} دائن`;
-    const pages = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
-    byId('sPreview').replaceChildren(...Array.from({ length: pages }, (_, index) => renderPage(data, index, pages)));
+    const pageRowCount = rowsPerPage();
+    const pages = Math.max(1, Math.ceil(rows.length / pageRowCount));
+    const title = byId('sTitle').value.trim() || 'كشف حساب';
+    document.title = title;
+    byId('sPanelTitle').textContent = title;
+    byId('sPreview').replaceChildren(...Array.from({ length: pages }, (_, index) => renderPage(data, index, pages, pageRowCount)));
     fitText();
   }
 
   function createField(labelText, key, value, type = 'text') {
     const label = document.createElement('label');
+    label.dataset.editorLabel = key;
     label.append(document.createTextNode(labelText));
     const input = document.createElement(type === 'textarea' ? 'textarea' : 'input');
     if (type === 'textarea') input.rows = 2;
@@ -306,6 +364,20 @@
     }
     label.append(input);
     return label;
+  }
+
+  function movementFieldLabel(key) {
+    const fields = { description: ['sColDescription', 'الوصف'], document: ['sColDocument', 'رقم المستند'], date: ['sColDate', 'تاريخ الحركة'], debit: ['sColDebit', 'مدين'], credit: ['sColCredit', 'دائن'] };
+    if (!fields[key]) return 'تاريخ الاستحقاق (اختياري)';
+    const [id, fallback] = fields[key];
+    const label = byId(id).value.trim() || fallback;
+    return key === 'document' ? `${label} (يمكن استخدام أكثر من سطر)` : key === 'date' && label === 'تاريخ' ? 'تاريخ الحركة' : label;
+  }
+
+  function updateEditorLabels() {
+    byId('sRowsEditor').querySelectorAll('[data-editor-label]').forEach(label => {
+      label.firstChild.nodeValue = movementFieldLabel(label.dataset.editorLabel);
+    });
   }
 
   function renderEditors() {
@@ -329,13 +401,13 @@
         (byId('sRowsEditor').querySelectorAll('.remove-item')[Math.min(index, rows.length - 1)] || byId('sAddRow')).focus();
       });
       heading.append(title, remove);
-      editor.append(heading, createField('الوصف', 'description', row.description, 'textarea'), createField('رقم المستند (يمكن استخدام أكثر من سطر)', 'document', row.document, 'textarea'));
+      editor.append(heading, createField(movementFieldLabel('description'), 'description', row.description, 'textarea'), createField(movementFieldLabel('document'), 'document', row.document, 'textarea'));
       const dates = document.createElement('div');
       dates.className = 'field-grid';
-      dates.append(createField('تاريخ الحركة', 'date', row.date, 'date'), createField('تاريخ الاستحقاق (اختياري)', 'due', row.due, 'date'));
+      dates.append(createField(movementFieldLabel('date'), 'date', row.date, 'date'), createField('تاريخ الاستحقاق (اختياري)', 'due', row.due, 'date'));
       const amounts = document.createElement('div');
       amounts.className = 'field-grid';
-      amounts.append(createField('مدين', 'debit', row.debit, 'number'), createField('دائن', 'credit', row.credit, 'number'));
+      amounts.append(createField(movementFieldLabel('debit'), 'debit', row.debit, 'number'), createField(movementFieldLabel('credit'), 'credit', row.credit, 'number'));
       editor.append(dates, amounts);
       return editor;
     }));
@@ -343,6 +415,15 @@
 
   function validate() {
     byId('sTo').setCustomValidity(byId('sFrom').value && byId('sTo').value < byId('sFrom').value ? 'يجب أن يكون «إلى تاريخ» مساويًا أو لاحقًا لـ «من تاريخ».' : '');
+    validateAgeLimits();
+    const invalid = byId('statementForm').querySelector(':invalid');
+    if (invalid) {
+      let group = invalid.closest('details');
+      while (group) {
+        group.open = true;
+        group = group.parentElement.closest('details');
+      }
+    }
     return byId('statementForm').reportValidity();
   }
 
@@ -440,7 +521,7 @@
 
   function setBusy(value) {
     busy = value;
-    byId('statementForm').querySelectorAll('button, input, textarea').forEach(control => { control.disabled = value; });
+    byId('statementForm').querySelectorAll('button, input, textarea, select').forEach(control => { control.disabled = value; });
     byId('sDownload').textContent = value ? 'جارٍ تجهيز المستند…' : 'تنزيل PDF';
   }
 
@@ -456,6 +537,8 @@
   byId('statementForm').addEventListener('input', event => {
     if (event.target.closest('#sRowsEditor') || event.target.type === 'file') return;
     if (event.target.id === 'sFrom' || event.target.id === 'sTo') byId('sTo').setCustomValidity('');
+    if (AGE_FIELDS.includes(event.target.id)) validateAgeLimits();
+    if (event.target.id.startsWith('sCol')) updateEditorLabels();
     updatePreview();
   });
   byId('sAddRow').addEventListener('click', () => {
@@ -472,6 +555,8 @@
     byId('sTo').value = isoToday();
     byId('sTo').setCustomValidity('');
     byId('sMessage').textContent = '';
+    validateAgeLimits();
+    lastValidAgeLimits = [30, 60, 90, 120];
     outputTime = new Date();
     renderEditors();
     updatePreview();
@@ -488,7 +573,8 @@
       const link = document.createElement('a');
       link.href = url;
       const customer = byId('sCustomer').value.trim().replace(/[\\/:*?"<>|]+/g, '-');
-      link.download = `كشف حساب مورد${customer ? ` - ${customer}` : ''} - ${byId('sTo').value}.pdf`;
+      const title = byId('sTitle').value.trim().replace(/[\\/:*?"<>|]+/g, '-') || 'كشف حساب';
+      link.download = `${title}${customer ? ` - ${customer}` : ''} - ${byId('sTo').value}.pdf`;
       document.body.append(link);
       link.click();
       link.remove();
